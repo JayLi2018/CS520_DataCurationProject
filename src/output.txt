@@ -1,0 +1,37 @@
+COPY 103660
+COPY 67051
+COPY 1088958
+COPY 74772
+COPY 7
+COPY 22859
+COPY 2332
+COPY 554501
+COPY 31101
+COPY 694682
+COPY 7505739
+COPY 492
+COPY 233491
+COPY 1537
+COPY 23
+COPY 2582
+COPY 20011
+COPY 67
+NOTICE:  identifier "census_data__selected_socioeconomic_indicators_in_chicago_2008__2012" will be truncated to "census_data__selected_socioeconomic_indicators_in_chicago_2008_"
+COPY 78
+COPY 1794465
+COPY 1063491
+COPY 596630
+COPY 22788
+COPY 92
+COPY 2737
+NOTICE:  identifier "libraries__locations__contact_information_and_usual_hours_of_operation" will be truncated to "libraries__locations__contact_information_and_usual_hours_of_op"
+COPY 81
+COPY 566
+NOTICE:  identifier "table311_service_requests__vacant_and_abandoned_buildings_reported__historical" will be truncated to "table311_service_requests__vacant_and_abandoned_buildings_repor"
+COPY 65119
+COPY 207137
+COPY 2884
+NOTICE:  identifier "chicago_police_department__illinois_uniform_crime_reporting_iucr_codes" will be truncated to "chicago_police_department__illinois_uniform_crime_reporting_iuc"
+COPY 410
+COPY 154226
+OPY 12509
