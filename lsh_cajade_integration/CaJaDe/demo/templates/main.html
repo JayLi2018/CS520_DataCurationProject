@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>	
+  <!-- <script src="https://d3js.org/d3.v7.min.js"></script> -->
+  <!-- <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script> -->
+  <script src="https://d3js.org/d3.v4.min.js" type="text/javascript"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.11.0/d3.min.js"></script>
+  <script src="https://d3js.org/d3-selection-multi.v1.js"></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+	<link rel="stylesheet" href='../static/main.css'>
+
+  <!-- <link rel="stylesheet" type="text/css" href="static/main.css"> -->
+	
+	<title>Main</title>
+</head>
+<body>
+
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Top Navbar %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">CaJaDE</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item dropdown">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                  DB Info
+                </button>
+                <div class="dropdown-menu">
+                   <form id="db-credentials" action="{{ url_for('db_connect')}}" method="post">
+                   <!--<form id="db-credentials" action="#" onsubmit="return dbConnect()" method="post">-->
+                       <label for="dbname">DB Name:</label>
+                       <input type="text" id="dbname" name="dbname">
+                       
+                       <label for="dbpswd">DB Password:</label>
+                       <input type="password" id="dbpswd" name="dbpswd">
+                       
+                       <label for="dbusr">DB User:</label>
+                       <input type="text" id="dbusr" name="dbusr">
+                       
+                       <label for="dbport">DB Port:</label>
+                       <input type="text" id="port" name="port" placeholder="5432", value="5432">
+
+                       <label for="dbhost">DB Host:</label>
+                       <input type="text" id="host" name="host" placeholder="127.0.0.1", value="127.0.0.1">
+
+                       <!-- <button type="submit" class="btn btn-primary", onclick="establish_conn()">Connect</button> -->
+                       <button type="submit" class="btn btn-primary">Connect</button>
+                       <button type="button" class="btn btn-secondary">Disconnect</button> 
+                   </form>
+                </div> 
+            </li>
+<!--             <li class="nav-item">
+              <a class="nav-link active" href="#">Home</a>
+            </li> -->
+<!--             <li class="nav-item">
+              <a class="nav-link active" href="#">Params</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="#">Schema Graph</a>
+            </li> -->
+          </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!--  href="#" onclick="tableList();return false;">  -->
+<div class="container-fluid">
+    <div class="row">
+      <nav class="col-md-1 d-none d-md-block bg-light accordion accordion-flush">
+             {% for i in db_tables %}
+             <div class="accordion-item">
+               <h2 class="accordion-header" id="heading{{ i }}">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{i}}" aria-expanded="true" aria-controls="collapse{{ i }}"> {{i}}
+                </button>
+              </h2>
+                <div id="collapse{{ i }}" class="accordion-collapse collapse" aria-labelledby="heading{{ i }}" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">
+                    <ul class="list-group">
+                      {% for c in db_datatype[i]%}
+                      <li class="list-group-item">{{ c[0] }} </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+            </div>
+             {% endfor %}
+         </ul>
+      </nav>
+      <div class="col-md-3">
+        
+        <div class="row">
+          <form id="query-form" method="POST" action="/run">
+            <div class="col-md-12" style="display: flex; flex-direction: column; justify-content: center;  ">
+              <!--<div class="input-group"> -->
+                <div class="input-group1">
+                  <div class="input-group-text" style="float: left;">SELECT</div>
+                  <!-- <input type="text" class="form-control" id="query-select" name="query-select" style="float: left; width: 82%;">  -->
+                  <input type="text" class="form-control" id="query-select" name="query-select" value = "count(*) as win, s.season_name" style="float: left; width: 82%;"> 
+                </div>
+                <div class="input-group2">
+                  <div class="input-group-text" style="float: left;">FROM</div>
+                  <!-- <input type="text" class="form-control" id="query-from" name="query-from" style="float: left; width: 85%;"> -->
+                  <input type="text" class="form-control" id="query-from" name="query-from" value=" team t, game g, season s " style="float: left; width: 83%;">
+                </div>
+                <div class="input-group3">
+                  <div class="input-group-text" style="float: left;">WHERE</div>
+                  <!-- <input type="text" class="form-control" id="query-where" name="query-where" style="float: left; width: 85%;"> -->
+                  <input type="text" class="form-control" id="query-where" name="query-where" value=" t.team_id = g.winner_id and g.season_id = s.season_id and t.team= 'GSW' " style="float: left; width: 83%;">
+                </div>
+                <div class="input-group4">
+                  <div class="input-group-text" style="float: left;">GROUP BY</div>
+                  <!-- <input type="text" class="form-control" id="query-group" name="query-group" style="float: left; width: 60%;">           -->
+                  <input type="text" class="form-control" id="query-group" name="query-group" value="s.season_name" style="float: left; width: 60%;">     
+                  <button type="button" class="btn btn-outline-primary" id="execute" style="width: 18%;">Run</button>             
+                </div>
+            </div>
+        	</form>
+        <div id="progress">
+          <div class="progress-bar progress-bar-striped" id="probar">0%</div>
+        </div>
+        </div>
+
+        <div class="row">
+            <br>
+            <div style="display: inline;">
+              <div style="float: left; width: 33%; padding: 10px;">
+                <!-- <p>Show
+                <select id="dataPerPage" class="form-select" style="width: 70px; display: inline;" onchange="changeRowsSelect()">
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+                Rows</p> -->
+              </div>
+              <div style="float: left; padding: 10px; width: 41%; text-align: right;">
+                <!-- <p id="sltROWScount"></p> -->
+              </div>
+              <div style="float: right; width: 22%; text-align: right;" id="container"></div>
+            </div>
+        </div>
+
+        <div style="float: right;" class="col-sm-1">
+          <div class="tooltip_q" id="tooltip_q_exp"></div>
+        </div> 
+        <div id="display" style="overflow-y: auto; height:300px;"></div><br>    
+
+        <div id="pageInfo" style="display: inline;">
+          <div style="float: left;">
+            <p id="displayCount"></p>
+          </div>
+          <div style="float: right;">
+            <ul id="pagingul" class="col-md-6"></ul>
+          </div>
+        </div><br>
+        <div class="row">
+          <div id="user_rating_update" style="width: 50%;"></div>
+          <div id="reset_JGselection" style="float: left; width:50%;">
+          </div>
+        </div>
+        <div style="float: right;" class="col-sm-1">
+          <div class="tooltip_q" id="tooltip_q_exptable"></div>
+        </div> 
+        <div id="explanation_table" style="overflow: auto; height: 300px; margin-bottom: 20px;"></div>
+      </div>
+
+      <div class="col-md-4"> <!--col-md-3--->
+       <!--  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"> -->
+        <div class="row" style="display: inline;">
+          <div style="float: right;" class="col-sm-1">
+            <div class="tooltip_q" id="tooltip_schema">
+            </div>
+          </div>  
+          <div id="schemagraph" class="col-md-12"></div>
+
+               
+        </div>
+        <br>
+        <!-- <div id="selectedJGexpl" style="margin-top: 50px;"></div> -->
+        <div class="row" style="display: inline;">
+          <div style="float: right;" class="col-sm-1">
+            <div class="tooltip_q" id="selectedjg_q">
+            </div>
+          </div> 
+          <div id="selectedJGexpl" class="col-md-12"></div>
+          <div id="legend" class="col-md-12" ></div>
+        </div>
+        <!-- <div id="explanation_graph" style="overflow-x: auto; height: 200px; white-space:nowrap; margin-bottom: 20px;"></div> -->
+        <!-- <div id="explanation_graph" style="overflow-y: auto; height: 300px; width: 93.5%;"></div> -->
+        <div class="row" style="display: inline;">
+          <div style="float: right;" class="col-sm-1">
+            <div class="tooltip_q" id="tooltip_q_jg">
+            </div>
+          </div>
+          <div id="explanation_graph" class="col-md-12"></div>
+        </div>
+      </div>   
+      
+      <div class= col-md-4>
+        <div style="float: right;" class="col-sm-1">
+          <div class="tooltip_q" id="tooltip_q_sum"></div>
+        </div> 
+        <div id="explanation_summary" style="overflow-x: auto; height: 300px; white-space:nowrap; margin-bottom: 20px;"></div> <!--text-align:center;-->
+        <div style="float: right;" class="col-sm-1">
+          <div class="tooltip_q" id="tooltip_q_viz"></div>
+        </div> 
+        <div id='vis' class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"></div>
+        <div id='viz-dropdowns'></div>
+      </div>
+
+		<script>
+      var colNum;
+      var colData;
+      let sltROWS = 0;
+      var selectedArr = new Array();
+      let sltROWScnt = "Total Selected Rows: ";
+      var tdArr = new Array();
+      var green_color="#2fdf28";
+      var purple_color="#bb0ef1";
+      var purple_text=null;
+      var green_text=null;
+
+      // current set of variables that will be used when update based on use feedback
+      var cur_exp_len;
+      var cur_exp_data; 
+      var cur_graphData;
+      var cur_summaryData;
+      var cur_highlightTextList;
+      // original set of variables that will be used when reset
+      var original_exp_len;
+      var original_exp_data;
+      var original_graphData;
+      var original_summaryData;
+      var original_highlightTextList;
+ 
+      var color_index = -1; ///////////////////////
+      var color_matching = [];
+      var likedList = [];
+      var dislikedList = [];
+      var exp_data_jgname;
+      var dots;
+      var selectedData; // = [];
+      var selectedData_nodes;
+      var selectedData_links;
+      var selectedDataIndex;
+      var selectedDataId;
+      var green; 
+      var purple;
+      var width = 230, height = 230;
+      var selected_pattern_desc=null;
+
+		  $('#execute').click(function(){
+		    let totalNum;
+		    let tblData;
+		    let dataPerPage;
+		    let pageCount = 5;
+		    let globalCurrentPage = 1;
+		    var cnt;
+		    var html;
+
+        //let sltList = [];
+        $('#reset_JGselection').empty();
+        // $('#reset_JGselection').append('<button type="button" class="btn btn-outline-primary" onclick="resetClicked()" style="visibility: visible;">Reset</button>');
+		    dataPerPage = $("#dataPerPage").val();
+		  
+		    var slt = $('#query-select').val();
+		    var agg = $('#query-aggregate').val();
+		    var frm = $('#query-from').val();
+        var where = $('#query-where').val();
+		    var grp = $('#query-group').val();
+		    
+		    var postdata = {'slt':slt, 'agg':agg, 'frm':frm, 'where':where, 'grp':grp}
+		    $.ajax({
+		      type: 'POST',
+		      url: '{{url_for("ajax")}}',
+		      data: JSON.stringify(postdata),
+		      dataType: 'JSON',
+		      contentType: "application/json",
+		      success: function(data){	
+		        totalNum = data.result2.length;
+		        colNum = data.result2[0].length;
+		        colData = data.result3;
+		        tblData = data.result2;
+
+            $("#sltROWScount").empty();
+            $('#container').empty();
+            selectedArr = [];
+            tdArr = [];
+            sltROWS = 0;
+
+		        displayData(totalNum);//(1, dataPerPage);
+            qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">query results</span>";
+            $("#tooltip_q_exp").append(qmarkHtml);
+		        //paging(totalNum, dataPerPage, pageCount, 1);
+
+            //selectRows();
+            /***
+		        $("#dataPerPage").change(function () {
+		          dataPerPage = $("#dataPerPage").val();
+		          paging(totalNum, dataPerPage, pageCount, globalCurrentPage);
+		          displayData(globalCurrentPage, dataPerPge);
+		        });
+            ***/
+
+		      },
+		      error: function(request, status, error){ 
+		        alert('ajax failed')
+		        alert(error);
+		      }
+		    })
+		    
+        // $("#dataPerPage").change(function () {
+		    //   dataPerPage = $("#dataPerPage").val();
+        //   displayData(1, dataPerPage);
+		    //   paging(totalNum, dataPerPage, pageCount, 1);
+
+		    //   //paging(totalNum, dataPerPage, pageCount, globalCurrentPage);
+		    //   //displayData(globalCurrentPage, dataPerPge);
+		    // });
+
+		    // function paging(totalNum, dataPerPage, pageCount, currentPage){
+		    //   let totalPageNum = Math.ceil(totalNum/dataPerPage);
+		    //   if(totalPageNum < pageCount){
+		    //     pageCount = totalPageNum;
+		    //   }
+		    //   let pageGroup = Math.ceil(currentPage/pageCount);
+		    //   let last = pageGroup*pageCount;
+		      
+		    //   if(last>totalPageNum){
+		    //     last = totalPageNum;
+		    //   }
+		    //   let first = last - (pageCount -1);
+		    //   let next = last + 1;
+		    //   let prev = first - 1;
+		    //   let pageHtml = "";
+		      
+		    //   pageHtml += "<nav aria-label=\"Page navigation example\"><ul class=\"pagination\">";
+
+		    //   if(prev > 0){
+        //     pageHtml += "<li><a class=\"page-link\" href='#' id='prev' aria-label=\"Previous\"><span aria-hidden=\"true\">&laquo;</span><span class=\"sr-only\">Previous</span></a></li>";		       
+		    //   }
+		    //   for(var i = first; i<=last; i++){ 
+		    //     if(currentPage == i){
+        //       pageHtml += "<li class='on'><a class=\"page-link\" href='#' id='"+i+"'>" + i + "</a></li>";
+
+		    //     } else{
+        //       pageHtml += "<li><a class=\"page-link\" href='#' id='"+i+"'>" + i + "</a></li>";
+
+		    //     }
+		    //   }
+		    //   if(last<totalPageNum){
+        //     pageHtml += "<li><a class=\"page-link\" href='#' id='next' aria-label=\"Next\"><span aria-hidden=\"true\">&raquo;</span><span class=\"sr-only\">Next</span></a></li>";
+		    //   }
+		    //   pageHtml += "</ul></nav>";
+		    //   $("#pagingul").html(pageHtml);
+		      
+		    //   let displayCount = "";
+		    //   let currentShowingPageFrom = (currentPage*dataPerPage)-dataPerPage+1;
+		    //   let currentShowingPageTo = currentPage*dataPerPage;
+        //   if(currentShowingPageTo > totalNum) currentShowingPageTo = totalNum;
+
+		    //   displayCount = "Showing "+currentShowingPageFrom+" to "+currentShowingPageTo+" of "+totalNum+" entries";
+		    //   //$("#displayCount").text(displayCount);
+		      
+		    //   $("#pagingul li a").click(function (){
+		    //     let $id = $(this).attr("id");
+		    //     selectedPage = $(this).text();
+		        
+		    //     if($id == "next") selectedPage = next;
+		    //     if($id == "prev") selectedPage = prev;
+		        
+		    //     globalCurrentPage = selectedPage;
+		        
+		    //     paging(totalNum, dataPerPage, pageCount, selectedPage);
+		    //     displayData(selectedPage, dataPerPage);
+		    //   });
+		    // }       
+
+		    function displayData(totalNum){//(currentPage, dataPerPage){
+		      let chartHtml = "";
+		      // currentPage = Number(currentPage);
+		      // dataPerPage = Number(dataPerPage);
+		      
+		      chartHtml = "<table class=\"table table-hover table-bordered\" sellspacing=\"0\" width=\"90%\" id=\"example\">";
+		      
+          chartHtml += "<thead><tr>";
+		      for(var i=0;i<colNum;i++){
+		        chartHtml += "<th style=\"text-align: center;\">" + colData[i] + "</th>";
+		      }
+		      
+		      chartHtml += "</tr></thead>";
+
+          // let tableFrom = (currentPage-1)*dataPerPage;
+          // let tableTo = (currentPage-1)*dataPerPage+dataPerPage;
+          // if(tableTo > totalNum) tableTo = totalNum;
+
+		      chartHtml += "<tbody>";
+          for(var i=0;i<totalNum;i++){//(var i = tableFrom; i<tableTo;i++){
+            let txtTMP = "";
+
+            for(var j=0;j<colNum;j++){txtTMP += tblData[i][j];}
+            if(selectedArr.indexOf(txtTMP) != -1){ chartHtml += "<tr onclick=\"selectRows(this);\" style=\"background-color: #e0e0e0;\">";}
+            else{chartHtml += "<tr onclick=\"selectRows(this);\">";}
+
+		        for(var j=0;j<colNum;j++){chartHtml += "<td style=\"text-align: center;\">" + tblData[i][j] + "</td>";}
+		        chartHtml += "</tr>";
+		      }
+		      chartHtml += "</tbody></table>";
+		      
+		      $("#display").empty();
+		      $("#display").append(chartHtml);          
+		    }
+		  })
+
+      function selectRows(elem){        
+        var text = $(elem).text();
+        console.log(text);          
+        var tr = $(elem);
+        var td = tr.children();
+
+        var cnt = selectedArr.indexOf(text);
+        var len = selectedArr.length;
+
+        if(selectedArr.includes(text))
+        {
+          if(text==green_text){
+            green_text=null;
+          }
+          else{
+            purple_text=null;
+          }
+          $(elem).css("background-color", "#FFFFFF");    
+          sltROWS -= 1;
+          selectedArr.splice(cnt,1);
+
+          $("#sltROWScount").empty();
+          $("#sltROWScount").append(sltROWScnt);
+          $("#sltROWScount").append(sltROWS);
+          $('#container').empty();
+          $('#container').append(
+            "<button onclick=\"exp()\" type=\"button\" class=\"btn btn-outline-primary\" id=\"explanation\" style=\"width:100%;\">Explain</button>"
+          ); 
+
+          td.each(function(i){
+            var index = tdArr.indexOf(td.eq(i).text());
+            if(index>-1){
+              tdArr.splice(index, 1);
+            }
+          })
+        }
+        else {
+          if(cnt==-1 && len<2){
+            if(green_text==null){
+              $(elem).css("background-color", green_color);
+              green_text=text;      
+            }
+            else{
+              $(elem).css("background-color", purple_color);
+              purple_text=text;      
+            }
+
+            sltROWS += 1;
+            selectedArr.push(text);
+
+            $("#sltROWScount").empty();
+            $("#sltROWScount").append(sltROWScnt);
+            $("#sltROWScount").append(sltROWS);
+
+            $('#container').empty();
+            $('#container').append(
+              "<button onclick=\"exp()\" type=\"button\" class=\"btn btn-outline-primary\" id=\"explanation\" style=\"width:100%;\">Explain</button>"
+            );    
+
+            td.each(function(i){
+              tdArr.push(td.eq(i).text());
+            })      
+          } 
+        }
+      }
+
+
+      function checkOne(element){
+        console.log("checkOne>>>>>");
+        const checkboxes = document.getElementsByName("user_checkBox");
+        checkboxes.forEach((cb) => { cb.checked = false;})
+        element.checked = true;
+
+        var checkbox = $("input[name=user_checkBox]:checked");
+        checkbox.each(function(i){
+          var tr = checkbox.parent().parent().eq(i);
+          var td = tr.children();
+          var pdes = td.eq(0).text();
+          selected_pattern_desc = pdes;
+          console.log("^^^^^^^checkbox pdes:^^^^^^", pdes); ///////////////@@@@@@@@@@@@@@
+          expParser(pdes);
+        });
+      }
+
+      function expParser(pdes){
+        var tmp = pdes.split(' ∧ ');
+        var newNodeList = [];
+        var newTargetNodeList = [];
+        
+        tmp.forEach(function(d){
+          var splitByPeriod = d.split('.');
+          var targetNode = splitByPeriod[0];
+          var node = d.replace(targetNode+".","");
+          var targetNode = targetNode.slice(0,-2); //split("_")[0];
+          
+          // var splitByEq = d.split('=');
+          // var node = splitByEq[1];
+          // var targetNode = splitByEq[0].split('_')[0];
+          console.log("***********node | targetNode: ", node, " | ", targetNode);
+          newNodeList.push(node);
+          newTargetNodeList.push(targetNode);
+        });
+
+        var jgName;
+        var fscoreValue;
+        var idx;
+        cur_exp_data.forEach(function(d){
+          if(d[2] == pdes){ jgName = d[1];fscoreValue = d[6];idx = d[0];
+            console.log("***********d2 |", d[2],"|jgName: ", jgName,"|fscore: ", fscoreValue,"|idx:",idx);
+          }
+          console.log("***********jgName: ", jgName);
+        });
+        updateSelectedData(jgName);
+        updateSelectedJG(newNodeList, newTargetNodeList, pdes);
+        dots.style("fill", function(d){if(d.idx == idx){return "#6699ff";}else{ return "#ffab00";}}).style("visibility", "visible");
+
+        // show default pattern graph
+        var pattern_numeric_to_draw = $('#viz-numerical-options').val();
+        var pattern_nominal_to_draw = [];
+        $('#viz-nominal-options input:checked').each(function() {
+          pattern_nominal_to_draw.push($(this).attr('value'));
+        });
+
+        $.ajax({
+          type: 'POST',
+          url: '{{url_for("draw")}}',
+          data: JSON.stringify({"numeric": pattern_numeric_to_draw, 
+              "nominal": pattern_nominal_to_draw, "pattern_desc": selected_pattern_desc, "first_call": 'yes'}),
+          dataType: 'JSON',
+          contentType: "application/json",
+          success: function(data){
+            plot_example(data.data, data.pattern_config, data.plot_type);
+            config_plot_options(data.cols, data.chosen_col);
+            // config_plot_options(data.num_cols, type='numerical');
+        }
+      })
+      }
+
+      function updateSelectedData(jgName){
+        console.log('jgName:', jgName);
+        console.log('cur_graphData: ', cur_graphData);
+        cur_graphData.forEach(function(d){
+          if(d["nodes"][0]["id"] == jgName){
+            selectedData = d;
+            selectedData_nodes = d["nodes"];
+            selectedData_links = d["links"];
+          }
+        });
+      }
+
+      function likeClicked(ele){
+        if(ele.style.color != "green"){
+          ele.style.color = "green";
+
+          var checkBtn = $(ele);
+          var tr = checkBtn.parent().parent();
+          var td = tr.children();
+          var pdes = td.eq(0).text();
+          likedList.push(pdes);
+          console.log("^^^^^^^likedList:^^^^^^", likedList);
+        }
+        //console.log("likeClicked>>>>>",ele.style.color);
+      }
+      function dislikeClicked(ele){
+        if(ele.style.color != "red"){
+          ele.style.color = "red";
+
+          var checkBtn = $(ele);
+          var tr = checkBtn.parent().parent();
+          var td = tr.children();
+          var pdes = td.eq(0).text();
+          dislikedList.push(pdes);
+          console.log("^^^^^^^dislikedList:^^^^^^", dislikedList);
+        }
+        //console.log("dislikeClicked>>>>>",ele.style.color);
+      }
+      //@@
+      function ratingUpdate(){
+        var postdata = {'likedList':likedList, 'dislikedList':dislikedList};
+
+		    $.ajax({
+		      type: 'UD',
+		      url: '{{url_for("ratingUD")}}',
+		      data: JSON.stringify(postdata),
+		      dataType: 'JSON',
+		      contentType: "application/json",
+          success: function(data){
+            if (data.result2){
+              cur_exp_len = data.result2.length;
+              cur_exp_data = data.result2;
+              cur_graphData = data.result3;
+              cur_summaryData = data.result5; ////
+              cur_highlightTextList = data.result6;
+              frac_name = data.result8; 
+              frac_value = data.result9;//@@
+
+              exp_summary(cur_summaryData, cur_exp_data, cur_exp_len, cur_graphData); //exp_summary(summaryData, exp_data, exp_len, fscoreData); 	
+              likedList = []; dislikedList = [];
+
+		      }else{
+            alert("no data");
+          }
+        },
+		      error: function(request, status, error){ 
+		        alert(error);
+		      }
+		    })
+      }
+
+      function resetClicked(){
+        $("#user_rating_update").empty();//remove update button
+        $("#selectedJGexpl").empty(); //remove selecteJG located in the right hand side       
+        $("#legend").empty(); //remove legend and fractions in the right hand side
+        $("#explanation_table").empty(); //remove filtered explanations
+        $("#tooltip_q_exptable").empty();
+        $("#viz-options").empty();
+        $("#tooltip_q_sum").empty();
+        $("#tooltip_q_viz").empty();
+        $("#vis").empty();
+        console.log(original_exp_data);
+        cur_exp_data = original_exp_data;
+        cur_graphData = original_graphData;
+        cur_highlightTextList = original_highlightTextList;
+        // expTable(original_exp_len, original_exp_data, original_highlightTextList,color_matching); //show the entire explanation table
+        exp_summary(original_summaryData, original_exp_data, original_exp_len, original_graphData); //exp_summary(summaryData, exp_data, exp_len, fscoreData);  
+        dots.style("fill", "#ffab00").style("visibility", "visible"); //make fscore dot all yellow
+        selectedData = []; selectedData_nodes = []; selectedData_links = []; //selectedDataIndex = []; //selectedDataId = -1;
+        likedList = [];dislikedList = [];
+      }
+
+      function highlightText(originalTxt, searchKeyword, replaceTxt) {
+        const regex = new RegExp(searchKeyword, 'g');
+        return originalTxt.toString().replace(regex, replaceTxt);
+      }
+
+      // function repText(originalTxt, searchComma, replaceTxt){
+      //   const regex = new RegExp(searchComma, 'g');
+      //   return originalTxt.toString().replace(regex, replaceTxt);
+      // }
+
+      function expTable(exp_len, exp_data, highlightTextList, color_matching){
+        let expHtml = "";
+        expHtml = "<table class=\"table table-bordered\" sellspacing=\"0\" width=\"90%\" id=\"exp\">";
+        expHtml += "<tbody>";
+
+        for(var i=0;i<exp_len;i++){
+          exp_data_pdesc = exp_data[i][2];
+          // exp_data_pdesc = repText(exp_data_pdesc, ',', "<span>&#8743;</span>");
+          highlightTextList.forEach(function(element){
+            var tmp_element = element.slice(0,-2);
+            var setcolor;
+            color_matching.forEach(function(d){if(d.name == tmp_element){ setcolor = d.color;}});
+            var repstr = "<span style=\"background-color:"+setcolor+";\">"+element+"</span>";
+            // exp_data_pdesc = exp_data[i][2];
+            //console.log("exp_data_pdesc: ", exp_data_pdesc, "| element: ", element);
+            exp_data_pdesc = highlightText(exp_data_pdesc, element, repstr);//exp_data[i] = highlightText(exp_data[i], element, repstr);
+            //console.log("highlightText>>>>exp_data_pdesc: ", exp_data_pdesc);
+          });
+
+          //expHtml += "<tr><td>"+ exp_data_pdesc +"</td></tr>"; //exp_data[i] //style=\"text-align: center;\"
+          // exp_data_pdesc = repText(exp_data_pdesc, ',', "<span>&#8743;</span>");
+
+          expHtml += "<tr><td style=\"width:80%;\">"+ exp_data_pdesc +"</td><td style=\"width:10%;\"><input type=\"checkbox\" name=\"user_checkBox\" onclick=\"checkOne(this)\"></td>";//style=\"zoom:4.0;\" 
+          expHtml += "<td style=\"width:10%;\">";
+          expHtml += "<button type=\"button\" class=\"btn hover1\" id=\"likeBTN\" name=\"user_like\" onclick=\"likeClicked(this)\"><i class=\"fa fa-thumbs-up\"></i></button>";
+          expHtml += "<button type=\"button\" class=\"btn hover1\" id=\"dislikeBTN\" name=\"user_dislike\" onclick=\"dislikeClicked(this)\"><i class=\"fa fa-thumbs-down\"></i></button></td></tr>";
+        }
+        expHtml += "</tbody></table>";
+
+        $("#explanation_table").empty();
+        $("#explanation_table").append(expHtml);
+
+        let resetBtnHtml = "";
+        resetBtnHtml += "<button type=\button\" class=\"btn btn-outline-primary\" onclick=\"resetClicked()\">Reset</button>";
+        $("#reset_JGselection").empty();             
+        $("#reset_JGselection").append(resetBtnHtml);
+
+        let updateBtnHtml = "";
+        updateBtnHtml += "<button type=\"button\" class=\"btn btn-outline-primary\" onclick=\"ratingUpdate()\">Update</button>";  
+        $("#user_rating_update").empty();             
+        $("#user_rating_update").append(updateBtnHtml);
+
+        qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">pattern: text descriptions</span>";
+        $("#tooltip_q_exptable").empty();
+        $("#tooltip_q_exptable").append(qmarkHtml);
+      }
+
+
+      function exp(){        
+        var expTEXT = "";
+        for(var i=0;i<tdArr.length;i++){
+          expTEXT += tdArr[i];
+          expTEXT += " ";
+        }
+
+		    var postdata_exp = { 'tdArr': tdArr, 'colNum': colNum, 'colData': colData}
+
+        // start explanation
+        $.ajax({
+          type: 'EXP',
+          url: '{{url_for("start_explanation")}}',
+          data: JSON.stringify(postdata_exp),
+          dataType: 'JSON',
+          contentType: "application/json"
+        })
+
+
+        // periodically retrieve result
+        var intervalid = setInterval(ajaxCall, 10000); //5000 MS = 5s
+        var bar = document.getElementById("probar");
+
+        function ajaxCall() {
+        $.ajax({
+          type: 'EXP',
+          url: '{{url_for("retrieve_explanation")}}',
+          // data: JSON.stringify(postdata_exp),
+          dataType: 'JSON',
+          // contentType: "application/json"
+          success: function(data){
+            running = data.isrunning;
+            status = data.status;
+            bar_width = data.bar_width;
+            // $('#status').text(status);
+            bar.style.width = bar_width + "%";
+            bar.innerHTML = status;
+            console.log(data.result2);
+            if (data.result2!='null'){
+              original_exp_len = data.result2.length;
+              original_exp_data = data.result2;
+              original_graphData = data.result3;
+              original_summaryData = data.result5; ////
+              original_highlightTextList = data.result6;
+              cur_exp_len=original_exp_len;
+              cur_exp_data=original_exp_data;
+              cur_graphData=original_graphData;
+              cur_summaryData=original_summaryData;
+              cur_highlightTextList=original_highlightTextList;
+              frac_name = data.result8; 
+              frac_value = data.result9;//@@
+              if(!running){
+                clearInterval(intervalid);
+              }
+
+              //exp_table(exp_data,exp_len,graphData);
+              exp_summary(cur_summaryData, cur_exp_data, cur_exp_len, cur_graphData); //exp_summary(summaryData, exp_data, exp_len, fscoreData); 
+
+              qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">Join graph</span>";
+              $("#tooltip_q_jg").empty();
+              $("#tooltip_q_jg").append(qmarkHtml);
+            } 
+            // else {
+            //   alert("No data");
+            // }
+          },
+          error: function(request, status, error){ 
+            alert('ajax failed')
+            alert(error);
+          }
+        })
+      }
+        
+        function getJGid(tmp_id){
+          tmp = tmp_id.split(' ')
+          jgID = tmp[0]
+          return jgID
+        }
+
+      } 
+
+      function exp_summary(summaryData, exp_data, exp_len, graphData){ //(exp_len, recallData, precisionData)
+        // join graph + scatter plot
+        // let sumHtml = "";
+        // var numOfExp = "The number of explanations: "+exp_len;
+        // sumHtml = "<table class=\"table table-bordered\" sellspacing=\"0\" width=\"90%\" id=\"exp\"><tbody>";
+        // sumHtml += "<tr><td style=\"text-align: left;\">Summary</td></tr>";
+        // sumHtml += "<tr><td style=\"text-align: left;\">1."+ numOfExp +"</td></tr>";
+        // sumHtml += "</tbody></table>";
+        $("#explanation_summary").empty();
+        // $("#explanation_summary").append(sumHtml);
+        $("#explanation_graph").empty();
+
+        qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">Fscore scatter plot</span>";
+        $("#tooltip_q_sum").empty();
+        $("#tooltip_q_sum").append(qmarkHtml);
+        qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">Pattern value distributions</span>";
+        $("#tooltip_q_viz").empty();
+        $("#tooltip_q_viz").append(qmarkHtml);
+        
+
+
+        //////////////////fscor-d3 scatter plot//////////////////
+        var margin = {top: 30, right: 30, bottom: 30, left: 30}, fs_width = 550, fs_height = 240;
+        //var dataset = fscoreData.map((d) => {return {"y": d };});
+        var fscoreData = [];
+        var jgnameId = [];
+        for(var i=0;i<summaryData.length;i++){
+          fscoreData.push(summaryData[i][1]);
+          jgnameId.push(summaryData[i][3]);
+        }
+
+        var fdataset = [];
+        fscoreData.forEach(function(key,i){
+          var obj = new Object();
+          obj['x'] = summaryData[i][2]; obj['y'] = fscoreData[i]; obj['id'] = jgnameId[i];obj['idx'] = summaryData[i][4]; //getJGid(summaryData[i][0])
+          //obj['x'] = exp_data[i]; obj['y'] = fscoreData[i]; //obj['id'] = jg_id[i];
+          fdataset.push(obj);
+        });
+
+        var n = fscoreData.length;
+
+        var xScale = d3.scaleLinear().domain([0, n-1]).range([0, fs_width]); //
+        var yScale = d3.scaleLinear().domain([0.1, 1]).range([fs_height, 0]); //[0, 1]
+
+        var svg = d3.select("#explanation_summary")
+                    .append("svg")
+                    .attr("width", fs_width + margin.left + margin.right)
+                    .attr("height", fs_height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+        // svg.append("g")
+        //     .attr("class", "x axis")
+        //     .attr("transform", "translate(0," + fs_height + ")")
+        //     .call(d3.axisBottom(xScale));
+        svg.append("g").attr("class", "y axis").call(d3.axisLeft(yScale));
+        svg.append("text").attr("x", (fs_width/2)).attr("y", 0-(margin.top/2)).attr("text-anchor", "middle")
+           .style("font-size", "18px").text("F Score Scatter Plot");
+        // svg.append("text").attr("text-anchor", "end").attr("x", (fs_width/2)+margin.left)
+        //     .attr("y", fs_height+50).text("The number of explanations");
+        svg.append("text").attr("text-anchor", "end").attr("transform", "rotate(-90)").attr("y", -margin.left+60)
+            .attr("x", -margin.top*2 - fs_height/2+100).text("F Score");
+        var tooltip = d3.select("#explanation_summary")
+                      .append("div")
+                      .attr("class", "tooltip")
+                      .style("background-color", "#a7a7a7")
+                      .style("color", "white")
+                      .style("border-width", "1px")
+                      .style("border-radius", "5px")
+                      .style("padding", "10px")
+                      .style("position", "absolute")
+                      .style("visibility", "hidden");
+        var mouseover = function(d) {tooltip.style("opacity", 1).style("visibility", "visible").text(d.x) };
+        var mousemove = function(d) {tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px")};
+        var mouseout = function(d) { tooltip.style("opacity", 0).style("visibility", "hidden") };
+        //var dots =svg.append('g')
+        dots = svg.append('g')
+          .selectAll("dot")
+          .data(fdataset)
+          .enter()
+          .append("circle")
+          .attr("cx", function(d, i) { return xScale(i) })
+          .attr("cy", function(d) { return yScale(d.y) })
+          .attr("r", 3)
+          .style("fill", "#ffab00")
+          .style("opacity", 0.5)
+          .style("stroke", "black")
+          .on("mouseover", mouseover )
+          .on("mousemove", mousemove )
+          .on("mouseout", mouseout );
+        // }
+
+        /////<Generate Text Color>
+        text_color_list = ['#BEBEBE','#ac92eb', '#4fc1e8', '#a0d568', '#ffce54', '#ed5564', '#FFB6C1', '#CD853F'];
+        // hue_list = [0,60,80,170,210,240,270,300,330,345]; //10colors
+        // hue_list.forEach(function(d){
+        //   if(d == 0){ text_color_list.push('hsl('+d+',0%,60%)');}
+        //   else { text_color_list.push('hsl('+d+',100%,70%)'); }
+        // });
+        console.log("textcolorlist: ", text_color_list);
+        // text_color_list = [];
+        // function generateRandomTextColor(length) {
+        //     while(text_color_list.length <length){
+        //         var hue = Math.floor(Math.random() * 360);
+        //         var pastel = 'hsl(' + hue + ', 100%, 80%)';
+        //         if(text_color_list.indexOf(pastel) == -1){
+        //             text_color_list.push(pastel);
+        //         }
+        //     }
+        // }
+        //generateRandomTextColor(highlightTextList.length);
+
+        /////<Node color>
+        // var node_length = node_list.length;
+        // node_color_list = [];
+
+        // function generateRandomColor(node_length) {
+        //   while(node_color_list.length <= node_length){
+        //       var hue = Math.floor(Math.random() * 360);
+        //       var pastel = 'hsl(' + hue + ', 100%, 80%)';
+        //       if(node_color_list.indexOf(pastel) == -1){
+        //           node_color_list.push(pastel);
+        //       }
+        //   }
+        // }
+
+        // generateRandomColor(node_length);
+
+        ////////////////////////var color_index = -1;
+        //var color_matching = [];
+
+        for(var i=0;i<graphData.length;i++){
+          tmp = graphData[i]["nodes"];
+          for(var j=0;j<tmp.length;j++){
+              var obj = tmp[j];
+              console.log("color index: ", color_index);
+
+              if(color_index <0){
+                color_index++;
+                obj.color = text_color_list[color_index];//node_color_list
+
+                var obj_tmp = new Object();
+                obj_tmp['name'] = obj['name']; obj_tmp['color'] = text_color_list[color_index];//node_color_list
+                color_matching.push(obj_tmp);
+              }else{
+                matching_check = false;
+                for(var t=0;t<color_matching.length;t++){
+                  nodeName = color_matching[t]["name"];
+                  if(nodeName == obj['name']){
+                    obj.color = color_matching[t]['color'];
+                    matching_check = true;
+                    break;
+                  }
+                }
+                if(matching_check == false){
+                  color_index++;
+                  obj.color = text_color_list[color_index];//node_color_list
+
+                  var obj_tmp = new Object();
+                  obj_tmp['name'] = obj['name']; obj_tmp['color'] = text_color_list[color_index];//node_color_list
+
+                  color_matching.push(obj_tmp);
+                }
+              }
+          }
+        }
+
+        expTable(cur_exp_len, cur_exp_data, cur_highlightTextList, color_matching); //@@@@@@@@@@@@@@@@@
+
+        (function( $ ) {
+          $.fn.generateMultiForce = function(svgObj) {
+              return this.each(function() {
+                  var graph = this;
+                  // var graphArea = svgObj.append("g");
+
+                  var svg = d3.select("#explanation_graph")
+                      // .append('div')       
+                      .append("svg")
+                      .attr("width", 300)
+                      .attr("height", 300)
+                      .data(graph.nodes) //
+                      .style("background-color", "white")
+                      .attr("align","center")
+                      // .style("width","42%")
+                      // .style("display", "inline-block")
+                      .on("mouseenter", mouseenter)
+                      .on("mouseleave", mouseleave)
+                      .on('click', click);
+
+                  var hist_data = graph.scores;
+
+                  console.log(hist_data);
+
+                  min = d3.min(hist_data);
+                  max = d3.max(hist_data);
+                  domain = [min,max+0.001];
+                  var margin = { top: 30, right: 10, bottom: 10, left: 30},
+                    h_width = 120,
+                    h_height = 100;
+
+                  // The number of bins
+                  Nbin = 10;
+
+                  var x = d3
+                    .scaleLinear()
+                    .domain(domain)
+                    .range([0, h_width]);
+
+                  var histogram = d3
+                    .histogram()
+                    .domain(x.domain()) // then the domain of the graphic
+                    .thresholds(x.ticks(Nbin)); // then the numbers of bins
+
+                  // And apply this function to data to get the bins
+                  var bins = histogram(hist_data);
+
+
+
+                  svg
+                    .append("svg")
+                    .attr("width", h_width + margin.left + margin.right)
+                    .attr("height", h_height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                  svg
+                    .append("g")
+                    .attr("transform", "translate(" +margin.left+ "," + (h_height+10) + ")")
+                    .call(d3.axisBottom(x).ticks(5));
+
+
+                  var y = d3
+                    .scaleLinear()
+                    .range([h_height, 0])
+                    .domain([
+                      0,
+                      d3.max(bins, function(d) {
+                        return d.length;
+                      })
+                    ]);
+
+                  svg.append("g")
+                  .attr("transform", "translate(" + margin.left+ ",10)")
+                  .call(d3.axisLeft(y).ticks(5));
+
+                  svg
+                  .append("g")
+                  .attr("transform", "translate(" + margin.left + ",10)")
+                    .selectAll("rect")
+                    .data(bins)
+                    .enter()
+                    .append("rect")
+                    .attr("x", 1)
+                    .attr("transform", function(d) {
+                      return "translate(" +x(d.x0) + "," + y(d.length) + ")";
+                    })
+                    .attr("width", function(d) {
+                      return x(d.x1) - x(d.x0) - 1;
+                    })
+                    .attr("height", function(d) {
+                      return h_height - y(d.length);
+                    })
+                    .style("fill", "#69b3a2");
+                     
+
+                  var simulation = d3
+                      .forceSimulation(graph.nodes)
+                      .force("charge", d3.forceManyBody().strength(-1500))
+                      .force("center", d3.forceCenter(300 *4 /7, 300 *4/ 7))
+                      .force("link", d3.forceLink(graph.links).id(d => d.name));
+
+                  var link =  svg
+                      .append("g")
+                      .selectAll("line")
+                      .data(graph.links)
+                      .enter()
+                      .append("line")
+                      .attr("stroke-width", 5)
+                      .attr("stroke", "#999")
+                      .on("mouseover", mouseover) ////
+                      .on("mouseout", mouseout) ////
+                      .on("mousemove", mousemove); ////
+
+                  var drag = d3
+                      .drag()
+                      .on("start", dragstarted)
+                      .on("drag", dragged)
+                      .on("end", dragended);
+                  var nodes_with_text = svg
+                      .append("g")
+                      .selectAll("g")
+                      .data(graph.nodes)
+                      .enter()
+                      .append("g")
+                      .call(drag);
+                      
+                  var circles = nodes_with_text.append("rect")
+                      .attr("width", function(d){ return d.name.length*10})
+                      .attr("height", 40)
+                      .attr("x", function(d){return -5*d.name.length})
+                      .attr("y", -20)
+                      .attr("fill", function(d){ return d.color});//.attr("fill", "#6fbc5b");
+
+                  // append("rect")
+                  //     .attr("width", 10).
+                  //     .attr("height", size*2.5)
+                  
+                  var texts = nodes_with_text.append("text").text(function(d){ return d.name})
+                                              .style("text-anchor", "middle").attr("class", "node-label");
+                  var tooltip = d3.select("#explanation_graph")
+                                  .append("div")
+                                  .style("position", "absolute")
+                                  .style("visibility", "hidden")
+                                  .style("background-color", "#a7a7a7")
+                                  .style("color", "white")
+                                  .style("border-width", "1px")
+                                  .style("border-radius", "5px")
+                                  .style("padding", "10px");
+
+                  simulation.on("tick", function() {
+                      link
+                          .attr("x1", function(d) { return d.source.x; })
+                          .attr("y1", function(d) { return d.source.y; })
+                          .attr("x2", function(d) { return d.target.x; })
+                          .attr("y2", function(d) { return d.target.y; });
+
+                      nodes_with_text.attr("transform", function(d) {
+                          return "translate("+d.x+","+d.y+")";
+                      });
+                  });
+                  function dragstarted(d) {
+                      simulation.alphaTarget(0.3).restart();
+                      d.fx = d3.event.x;
+                      d.fy = d3.event.y;
+                  }
+                  function dragged(d) {
+                      d.fx = d3.event.x;
+                      d.fy = d3.event.y;
+                  }
+                  function dragended(d) {
+                      simulation.alphaTarget(0);
+                      d.fx = null;
+                      d.fy = null;
+                  }
+                  function mouseover(d) { tooltip.style("visibility", "visible").text(d.cond); }
+                  function mouseout() { tooltip.style("visibility", "hidden"); }
+                  function mousemove(){ tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px"); }
+                  ///click function
+                  function click(d){
+                    console.log("clicked!", d.id);
+                      id = d.id;
+                      let fscoreY ="";
+                      dots.style("fill", function(d,i){
+                          if(d.id == id){ fscoreY += " | "+d.y; return "#6699ff";} //"blue" "#b3ccff"
+                          else{ return "#ffab00";}}).style("visibility", "visible");
+                    //tooltip.style("visibility", "visible").text("clicked: ", d.id);
+                    // let sumHtml = "";
+                    // sumHtml = "<table class=\"table table-bordered\" sellspacing=\"0\" width=\"90%\" id=\"exp\"><tbody>";
+                    // sumHtml += "<tr><td style=\"text-align: left;\">Selected Join Graph</td></tr>";
+                    // sumHtml += "<tr><td style=\"text-align: left;\">1. Corresponding Fscore:"+fscoreY+"</td></tr>";
+                    // sumHtml += "</tbody></table>";
+                    $("#selectedJGexpl").empty();
+                    // $("#selectedJGexpl").append(sumHtml);
+                    selectedJG(id);
+                    //filter explanation table
+                    filterExpl(id);
+                  }
+                  function mouseenter(){ svg.style("background-color", "#ffd889"); }
+                  function mouseleave(){ svg.style("background-color", "white"); }
+              });
+          };
+        })(jQuery);
+
+        var svgTest = d3.select("#explanation_graph");
+        $(graphData).generateMultiForce(svgTest);
+        ////@@@
+        function filterExpl(id){
+          console.log("filterExpl id: ",id);
+          
+          let newExpHtml = "";
+          newExpHtml = "<table class=\"table table-bordered\" sellspacing=\"0\" width=\"90%\"><tbody>";
+          
+          for(var i=0;i<exp_len;i++){
+            exp_data_jgname = cur_exp_data[i][1];
+            if(exp_data_jgname == id){
+              console.log("exp_data_jgname == id/////////////////: ",exp_data_jgname);
+              exp_data_pdesc = cur_exp_data[i][2];
+              cur_highlightTextList.forEach(function(element){ //highlightTextList
+                var tmp_element = element.slice(0,-2);
+                var setcolor;
+                color_matching.forEach(function(d){if(d.name == tmp_element){setcolor = d.color;}});
+                var repstr = "<span style=\"background-color:"+setcolor+";\">"+element+"</span>";
+                exp_data_pdesc = highlightText(exp_data_pdesc, element, repstr);
+              });
+              //newExpHtml += "<tr><td>"+ exp_data_pdesc +"</td></tr>";
+              newExpHtml += "<tr><td style=\"width:80%;\">"+ exp_data_pdesc +"</td><td style=\"width:10%;\"><input type=\"checkbox\" name=\"user_checkBox\" onclick=\"checkOne(this)\"></td>"; //style=\"zoom:4.0;\" 
+              newExpHtml += "<td style=\"width:10%;\">";
+              newExpHtml += "<button type=\"button\" class=\"btn hover1\" id=\"likeBTN\" name=\"user_like\" onclick=\"likeClicked(this)\"><i class=\"fa fa-thumbs-up\"></i></button>";
+              newExpHtml += "<button type=\"button\" class=\"btn hover1\" id=\"dislikeBTN\" name=\"user_dislike\" onclick=\"dislikeClicked(this)\"><i class=\"fa fa-thumbs-down\"></i></button></td></tr>";
+            }
+          } 
+          newExpHtml += "</tbody></table>";
+          // newExpHtml += "<button type=\"button\" class=\"btn btn-outline-primary\" id=\"checkBoxSelectBtn\" onclick=\"checkBoxSelectBtn()\">UPDATE</button>";
+          $("#explanation_table").empty();
+          $("#explanation_table").append(newExpHtml);
+
+          qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">pattern: text descriptions</span>";
+          $("#tooltip_q_exptable").empty();
+          $("#tooltip_q_exptable").append(qmarkHtml);
+
+          // let updateBtnHtml = "";
+          // updateBtnHtml += "<button type=\"button\" class=\"btn btn-outline-primary\" onclick=\"ratingUpdate()\">Update</button>";            
+          // $("#user_rating_update").append(updateBtnHtml);
+        }
+
+        function selectedJG(id){
+          console.log("selectedJGexpl id: ",id);
+          //
+          for(var i=0;i<graphData.length;i++){
+            if(graphData[i]["nodes"][0]["id"] == id){
+                  selectedDataIndex = i;
+                  selectedData = graphData[selectedDataIndex]; /////@@@@@@@
+                  selectedData_nodes = graphData[selectedDataIndex]["nodes"];
+                  selectedData_links = graphData[selectedDataIndex]["links"];
+                  selectedDataId = selectedData_nodes[0]["id"];
+                  console.log("%%%%%%%%%1%%%%%%: ", selectedData); /////@@@@@@@
+                  console.log("%%%%%%%%%2%%%%%%: ", selectedData_nodes); /////@@@@@@@
+                  console.log("%%%%%%%%%3%%%%%%: ", selectedData_links); /////@@@@@@@
+                  
+                  var w_selected = 600; var h_selected = 300;
+                  var svg = d3.select("#selectedJGexpl").append("svg").attr("width", w_selected).attr("height", h_selected)
+                              .data(graphData[selectedDataIndex]["nodes"])
+                  var simulation = d3.forceSimulation(graphData[selectedDataIndex]["nodes"])
+                                    .force("charge", d3.forceManyBody().strength(-1700))
+                                    .force("center", d3.forceCenter(w_selected/2, h_selected/2))
+                                    .force("link", d3.forceLink(graphData[selectedDataIndex]["links"]).id(d => d.name));
+                  var link =  svg.append("g").selectAll("line").data(graphData[selectedDataIndex]["links"]).enter()
+                                .append("line").attr("stroke-width", 5).attr("stroke", "#999")
+                                .on("mouseover", mouseover).on("mouseout", mouseout).on("mousemove", mousemove);
+                  var drag = d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+                  var nodes_with_text = svg.append("g").selectAll("g").data(graphData[selectedDataIndex]["nodes"])
+                                            .enter().append("g").call(drag);
+                  var circles = nodes_with_text.append('rect')
+                      .attr("width", function(d){ return d.name.length*10})
+                      .attr("height", 40)
+                      .attr("x", function(d){return -5*d.name.length})
+                      .attr("y", -20)
+                  .attr("fill", function(d){ return d.color});//.attr("fill", "#6fbc5b");
+                  var texts = nodes_with_text.append("text").text(function(d){ return d.name})
+                                              .style("text-anchor", "middle").attr("class", "node-label");
+                  var tooltipp = d3.select("#selectedJGexpl").append("div").style("position", "absolute")
+                                    .style("visibility", "hidden").style("background-color", "#a7a7a7")
+                                    .style("color", "white").style("border-width", "1px")
+                                    .style("border-radius", "5px").style("padding", "10px");
+                  simulation.on("tick", function() {
+                      link.attr("x1", function(d) { return d.source.x; }).attr("y1", function(d) { return d.source.y; })
+                          .attr("x2", function(d) { return d.target.x; }).attr("y2", function(d) { return d.target.y; });
+
+                      nodes_with_text.attr("transform", function(d) { return "translate("+d.x+","+d.y+")"; });
+                  });
+                  function dragstarted(d) { simulation.alphaTarget(0.3).restart(); d.fx = d3.event.x; d.fy = d3.event.y; }
+                  function dragged(d) { d.fx = d3.event.x; d.fy = d3.event.y; }
+                  function dragended(d) { simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+                  function mouseover(d) { tooltipp.style("visibility", "visible").text(d.cond); }
+                  function mouseout() { tooltipp.style("visibility", "hidden"); }
+                  function mousemove(){ tooltipp.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px"); }
+            }
+          }          
+        }
+      }
+
+      function updateSelectedJG(newNodeList, newTargetNodeList, pdes){
+        ///<Calculate Fractions>
+        var isUser;
+        var green_frac_index;
+        var tmpUpdate = new Object();
+
+        $('#selectedjg_q').empty();
+        $('#selectedjg_q').append('<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">join graph with pattern predicates</span>');
+        for(var i=0;i<cur_exp_data.length;i++){
+          if(cur_exp_data[i][2] == pdes){ isUser = cur_exp_data[i][3]; break;}
+        }
+        var internal_isUser = isUser.replace(/\s/g, '');
+        //var isUser = exp_data[i][3];
+        // var isUserTmp = isUser.split('AND')[0].split('=')[1];
+        // console.log("isUserTmp>>>>>>>>>>>>>>>>>>>>>>>", isUserTmp);
+
+        // var frac_green; var frac_purple;
+        // frac_tmp.forEach(function(d){
+        //   if(parseInt(d) == parseInt(isUserTmp)){frac_green = parseInt(d);console.log("frac_green>>>>>>>>>>>>>>>>>>>>>>>", frac_green);}
+        //   else{frac_purple = parseInt(d);console.log("frac_purple>>>>>>>>>>>>>>>>>>>>>>>", frac_purple);}
+        // })
+        console.log("isUser : ", isUser);
+        console.log("green_text : ", green_text);
+        console.log("purple_text : ", purple_text);
+
+
+        if(internal_isUser == green_text){
+          console.log("isUser == green_text!")
+          green_frac_index=frac_name.indexOf(isUser);
+          frac_green = frac_value[green_frac_index];
+          console.log("frac_green : ", frac_green);
+          frac_purple = frac_value[1-green_frac_index];
+          console.log("frac_purple : ", frac_purple);
+          var fracValue_green = Math.round(frac_green*cur_exp_data[i][4]);
+          console.log("fracValue_green>>>>>>>>>>>>>>>>>>>>>>>", fracValue_green);
+          green = fracValue_green+'/'+frac_green;
+          console.log("green>>>>>>>>>>>>>>>>>>>>>>>", green);
+          var fracValue_purple = Math.round(frac_green/cur_exp_data[i][5]-frac_green);
+          console.log("fracValue_purple>>>>>>>>>>>>>>>>>>>>>>>", fracValue_purple);
+          purple = fracValue_purple+'/'+frac_purple;
+        }
+        else{
+          purple_frac_index=frac_name.indexOf(isUser);
+          frac_purple = frac_value[purple_frac_index];
+          frac_green = frac_value[1-purple_frac_index];
+          var fracValue_purple = Math.round(frac_purple*cur_exp_data[i][4]);
+          console.log("fracValue_purple>>>>>>>>>>>>>>>>>>>>>>>", fracValue_purple);
+          purple = fracValue_purple+'/'+frac_purple;
+          console.log("green>>>>>>>>>>>>>>>>>>>>>>>", green);
+          var fracValue_green = Math.round(frac_purple/cur_exp_data[i][5]-frac_purple);
+          console.log("fracValue_green>>>>>>>>>>>>>>>>>>>>>>>", fracValue_green);
+          green = fracValue_green+'/'+frac_green;
+        }
+
+
+
+        console.log("fracValue_purple>>>>>>>>>>>>>>>>>>>>>>>", purple);
+        ///////////////////////////////////////////////////////////
+        // console.log("%%%%%%%%%newNodeList: ", newNodeList);
+        // console.log("&&&&&&&newTargetNodeList: ",newTargetNodeList);
+
+        // console.log("%%%%%%%%%1@@@@@: ", selectedData); /////@@@@@@@
+        // console.log("%%%%%%%%%2@@@@@: ", selectedData_nodes); /////@@@@@@@
+        // console.log("%%%%%%%%%3@@@@@: ", selectedData_links); /////@@@@@@@
+        // console.log("%%%%%%%%%4@@@@@: ", selectedDataId);
+
+        var obj_Node = [];
+        var obj_Link = [];
+
+        for(var i=0;i<selectedData["nodes"].length;i++){
+          var objNode = new Object();
+          objNode["name"] = selectedData["nodes"][i]["name"];objNode["color"] = selectedData["nodes"][i]["color"];objNode["id"] = selectedDataId;
+          obj_Node.push(objNode);
+        }
+        for(var i=0;i<newNodeList.length;i++){
+          var objNodeNew = new Object();
+          objNodeNew["name"] = newNodeList[i];objNodeNew["color"] = "hsl(20, 100%, 65%)";objNodeNew["id"] = "attr";//selectedDataId;
+          obj_Node.push(objNodeNew);
+        }
+        tmpUpdate.nodes = obj_Node;
+
+        for(var j=0;j<selectedData["links"].length;j++){
+          var objLink = new Object();
+          obj_Node.forEach(function(d){
+            if(d["name"] == selectedData["links"][j]["source"]["name"]){objLink["source"] = d;}
+            if(d["name"] == selectedData["links"][j]["target"]["name"]){objLink["target"] = d;}
+          });
+          objLink["cond"] = selectedData["links"][j]["cond"];
+          obj_Link.push(objLink);
+        }
+        for(var j=0;j<newTargetNodeList.length;j++){
+          var objLink = new Object();
+          //objLink["source"] = objNodeNew[j];
+          obj_Node.forEach(function(d){
+            if(d["name"] == newNodeList[j]){objLink["source"] = d;}
+            if(d["name"] == newTargetNodeList[j]){objLink["target"] = d;}
+          });
+          objLink["cond"] = ""; ///
+          obj_Link.push(objLink);              
+        }
+        tmpUpdate.links = obj_Link;
+        console.log("^^^^^^^^^tmpUpdate::: ", tmpUpdate);
+        //////////////////////////////////////////
+        $("#selectedJGexpl").empty();
+        (function( $ ) {
+          $.fn.generateMultiForce1 = function(svgObj) {
+            return this.each(function() {
+              var graph = this;
+              // var graphArea = svgObj.append("g");
+              var active = d3.select(null); ///
+              var w = 600; var h = 300;
+              var svg = d3.select("#selectedJGexpl").append("svg").attr("width", w).attr("height", h).data(graph.nodes)
+                          //.on("mouseenter", mouseenter).on("mouseleave", mouseleave);
+              ////@@@@
+              var keys = ["relations", "predicates"];
+              var shapes = ["circle", "rect"];
+              var size = 20;
+              var color = d3.scaleOrdinal().domain(shapes).range(keys);
+              $("#legend").empty();
+              var svg_legend = d3.select("#legend").append("svg").attr("width", 600).attr("height", 60);
+              // svg_legend.append("circle").attr("cx", 200).attr("cy", 130).attr("r", 10);
+              // svg_legend.append("circle").attr("cx", 110).attr("cy", 50).attr("r", 10).style("fill", "#999");
+              // svg_legend.append("text").attr("x", 130).attr("y", 54).text("relations").style("font-size", "15px").attr("alignment-baseline","middle");
+              
+              svg_legend.append("rect").attr("x", 235).attr("y", 5).attr("width", size*3).attr("height", size*2.5).style("fill", "#33ff33");
+              svg_legend.append("text").attr("x", 245).attr("y", 28).text(green).style("font-size", "18px").attr("alignment-baseline","middle");
+              svg_legend.append("rect").attr("x", 305).attr("y", 5).attr("width", size*3).attr("height", size*2.5).style("fill", "#9933ff");
+              svg_legend.append("text").attr("x", 315).attr("y", 28).text(purple).style("font-size", "18px").attr("alignment-baseline","middle");
+
+              // svg_legend.append("rect").attr("x", 100).attr("y", 50+size+5).attr("width", size).attr("height", size).style("fill", "#999");
+              // svg_legend.append("text").attr("x", 130).attr("y", 54+size+5+6).text("predicates").style("font-size", "15px").attr("alignment-baseline","middle");
+              //.append("svg").attr("width", w).attr("height", h).style("background-color", "#ccddff"); //@@
+              // svg_legend.selectAll("mydots").data(shapes).enter().append(function(d){ return d }).attr("x", 100).attr("y", function(d,i){return 50+i*(size+5)}).attr("width", size).attr("height", size);
+              // svg_legend.selectAll("mylabels").data(shapes).enter().append("text").attr("x", 100+size*1.2).attr("y", function(d,i){ return 50 + i*(size+5) + (size/2)})
+                        // .style("fill", "#000000").text(function(d){ return color(d)}).attr("text-anchor", "left").style("alignment-baseline", "middle");
+              /////////////////
+              // var keys = [];
+              // var color_list = [];
+
+              // selectedData_nodes.forEach(function(d){keys.push("relations"); color_list.push(d.color);
+              // keys.push("predicates"); color_list.push("hsl(20, 100%, 80%)");
+              // var color = d3.scaleOrdinal().domain(color_list).range(keys);
+
+              // var size = 20;
+              // svg.selectAll("mydots").data(color_list).enter().append("rect").attr("x", 100).attr("y", function(d,i){ return 50 + i*(size+5)})
+              //     .attr("width", size).attr("height", size).style("fill", function(d){ return d});
+              // svg.selectAll("mylabels").data(color_list).enter().append("text").attr("x", 100 + size*1.2).attr("y", function(d,i){ return 50 + i*(size+5) + (size/2)})
+              //     .style("fill", "#000000").text(function(d){ return color(d)}).attr("text-anchor", "left").style("alignment-baseline", "middle");
+              /////////////////////
+
+              // var simulation = d3.forceSimulation(graph.nodes).force("charge", d3.forceManyBody().strength(-1800))
+              //         .force("center", d3.forceCenter(w/2, h/2))
+              //         /////.force("collision", d3.forceCollide().radius(function(d){if(d.id=="attr"){return 100} else{return 50}}))
+              //         .force("link", d3.forceLink(graph.links).id(d => d.name).distance(function(d){if(d.source.id=="attr" || d.target.id=="attr"){return 70}else{return 20}}));//;
+                      // .force("collision", rectCollide().size(function(d){return [d.width, d.height]}))
+                      //.force("collide", d3.forceCollide().strength(.1).radius(50).iterations(1))//; ////@@@@
+                      //.force("charge", function(d){ if(d.id=="attr"){return d3.forceManyBody().strength(-1500);} else{return d3.forceManyBody().strength(-2000);}});
+              var link = svg.append("g").selectAll("line").data(graph.links).enter().append("line").attr("stroke-width", 5)
+                              .attr("stroke", "#999").on("mouseover", mouseover).on("mouseout", mouseout).on("mousemove", mousemove);
+              var drag = d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+              var nodes_with_text = svg.append("g").selectAll("g").data(graph.nodes).enter().append("g")
+                                        .attr("class", function(d){if(d.id == "attr"){return "rt";} else{return "cl";}}).call(drag);
+              ///d3.selectAll(".rt").append("rect").attr("width", 150).attr("height", 25).attr("x", -75).attr("y",-12.5).attr("fill", function(d){ return d.color});
+              d3.selectAll(".rt").append("rect").attr("width", function(d){ return d.name.length*9}).attr("height", 30)
+                .attr("x", function(d){return -4.5*d.name.length}).attr("y",-15).attr("fill", function(d){ return d.color});
+              ///////////d3.selectAll(".rt").append("rect").attr("width", 50).attr("height", 50).attr("x", -25).attr("y",-25).attr("fill", function(d){ return d.color});
+                //.append("text").text(function(d){ return d.name}).style("text-anchor", "middle").style("font-size", "10px").attr("class", "node-label");
+              d3.selectAll(".cl").append("rect").attr("width", function(d){ return d.name.length*9}).attr("height", 30)
+              .attr("x", function(d){return -4.5*d.name.length}).attr("y", -15).attr("fill", function(d){ return d.color});
+                //.append("text").text(function(d){ return d.name}).style("text-anchor", "middle").style("font-size", "10px").attr("class", "node-label");
+              //var circles = nodes_with_text.append("circle").attr("r", 25).attr("fill", function(d){ return d.color});
+              var texts = nodes_with_text.append("text").text(function(d){ return d.name}).style("text-anchor", "middle").style("font-weight", "bold")
+                                          .style("font-size", function(d){if(d.id == "attr"){return "14px";} else{return "18px";}}).attr("class", "node-label");
+              //#svg
+              var tooltiptest = d3.select("#selectedJGexpl").append("div").style("position", "absolute").style("visibility", "hidden").style("background-color", "#a7a7a7")
+                              .style("color", "white").style("border-width", "1px").style("border-radius", "5px").style("padding", "10px");
+              ///////////////////@@@@@@@@@@@@@
+              var collisionForce = rectCollide().size(function(d) { return [d.name.length*2, 30]});
+              var simulation = d3.forceSimulation(graph.nodes).force("charge", d3.forceManyBody().strength(-1800)).force("center", d3.forceCenter(w/2, h/2))
+                                  .force("link", d3.forceLink(graph.links).id(d => d.name).distance(50))
+                                  .force('collision', collisionForce);//;
+                                  //.force("link", d3.forceLink(graph.links).id(d => d.name).distance(function(d){if(d.source.id=="attr" || d.target.id=="attr"){return 40}else{return 20}}))
+                                  
+              function rectCollide() {
+                var nodes, sizes, masses
+                var size = constant([0, 0])
+                var strength = 1
+                var iterations = 1
+
+                function force() {
+                    var node, size, mass, xi, yi
+                    var i = -1
+                    while (++i < iterations) { iterate() }
+
+                    function iterate() {
+                        var j = -1
+                        var tree = d3.quadtree(nodes, xCenter, yCenter).visitAfter(prepare)
+
+                        while (++j < nodes.length) {
+                            node = nodes[j]
+                            size = sizes[j]
+                            mass = masses[j]
+                            xi = xCenter(node)
+                            yi = yCenter(node)
+
+                            tree.visit(apply)
+                        }
+                    }
+
+                    function apply(quad, x0, y0, x1, y1) {
+                        var data = quad.data
+                        var xSize = (size[0] + quad.size[0]) / 2
+                        var ySize = (size[1] + quad.size[1]) / 2
+                        if (data) {
+                            if (data.index <= node.index) { return }
+
+                            var x = xi - xCenter(data)
+                            var y = yi - yCenter(data)
+                            var xd = Math.abs(x) - xSize
+                            var yd = Math.abs(y) - ySize
+
+                            if (xd < 0 && yd < 0) {
+                                var l = Math.sqrt(x * x + y * y)
+                                var m = masses[data.index] / (mass + masses[data.index])
+
+                                if (Math.abs(xd) < Math.abs(yd)) {
+                                    node.vx -= (x *= xd / l * strength) * m
+                                    data.vx += x * (1 - m)
+                                } else {
+                                    node.vy -= (y *= yd / l * strength) * m
+                                    data.vy += y * (1 - m)
+                                }
+                            }
+                        }
+
+                        return x0 > xi + xSize || y0 > yi + ySize ||
+                                x1 < xi - xSize || y1 < yi - ySize
+                    }
+
+                    function prepare(quad) {
+                        if (quad.data) {
+                            quad.size = sizes[quad.data.index]
+                        } else {
+                            quad.size = [0, 0]
+                            var i = -1
+                            while (++i < 4) {
+                                if (quad[i] && quad[i].size) {
+                                    quad.size[0] = Math.max(quad.size[0], quad[i].size[0])
+                                    quad.size[1] = Math.max(quad.size[1], quad[i].size[1])
+                                }
+                            }
+                        }
+                    }
+                }
+
+                function xCenter(d) { return d.x + d.vx + sizes[d.index][0] / 2 }
+                function yCenter(d) { return d.y + d.vy + sizes[d.index][1] / 2 }
+
+                force.initialize = function (_) {
+                    sizes = (nodes = _).map(size)
+                    masses = sizes.map(function (d) { return d[0] * d[1] })
+                }
+
+                force.size = function (_) {
+                    return (arguments.length
+                          ? (size = typeof _ === 'function' ? _ : constant(_), force)
+                          : size)
+                }
+
+                force.strength = function (_) {
+                    return (arguments.length ? (strength = +_, force) : strength)
+                }
+
+                force.iterations = function (_) {
+                    return (arguments.length ? (iterations = +_, force) : iterations)
+                }
+
+                return force
+              }            
+              function constant(_) { return function () { return _ } }
+
+              simulation.on("tick", function() {
+                  link.attr("x1", function(d) { return d.source.x; }).attr("y1", function(d) { return d.source.y; })
+                      .attr("x2", function(d) { return d.target.x; }).attr("y2", function(d) { return d.target.y; });
+                  //nodes_with_text.attr("transform", function(d) { return "translate("+d.x+","+d.y+")";});
+                  //nodes_with_text.attr("transform", function(d) { if(d.id=="attr"){return "translate("+Math.max(150, Math.min(w-150, d.x))+","+Math.max(25, Math.min(h-25, d.y))+")";} else{return "translate("+Math.max(25, Math.min(w-25, d.x))+","+Math.max(25, Math.min(h-25, d.y))+")";}});
+                  ///@@@@nodes_with_text.attr("transform", function(d) { if(d.id=="attr"){return "translate("+Math.max(d.name.length*9/2, Math.min(w-d.name.length*9/2, d.x))+","+Math.max(20, Math.min(h-20, d.y))+")";} else{return "translate("+Math.max(25, Math.min(w-25, d.x))+","+Math.max(25, Math.min(h-25, d.y))+")";}});
+                  nodes_with_text.attr("transform", function(d) { return "translate("+Math.max(d.name.length*9/2, Math.min(w-d.name.length*9/2, d.x))+","+Math.max(15, Math.min(h-15, d.y))+")";} );
+
+                  ////////////////////nodes_with_text.attr("transform", function(d) { return "translate("+Math.max(50, Math.min(w-50, d.x))+","+Math.max(50, Math.min(h-50, d.y))+")";});
+                  // nodes_with_text.attr("cx", function(d){return d.x = Math.max(25, Math.min(w-25, d.x));})
+                  //                 .attr("cy", function(d){return d.y = Math.max(25, Math.min(h-25, d.y));});
+              });
+              function dragstarted(d) {if(!d3.event.active) simulation.alphaTarget(0.3).restart();d.fx = d3.event.x;d.fy = d3.event.y;}
+              function dragged(d) {d.fx = d3.event.x;d.fy = d3.event.y;}
+              function dragended(d) {if(!d3.event.active) simulation.alphaTarget(0);d.fx = null;d.fy = null;}
+              //function mouseover(d) {tooltiptest.style("visibility", "visible").text(d.cond);}
+              function mouseover(d) {if(d.cond != "")tooltiptest.style("visibility", "visible").text(d.cond);}
+              function mouseout() {tooltiptest.style("visibility", "hidden");}
+              function mousemove(){tooltiptest.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");}
+              // function mouseenter(){svg.style("background-color", "#ffd889");}
+              // function mouseleave(){svg.style("background-color", "white");}
+            });
+          };
+        })(jQuery);
+
+        var svg = d3.select("#selectedJGexpl").append("svgUpdate");//.attr("width", width).attr("height", height);
+        $(tmpUpdate).generateMultiForce1(svg);
+      }
+
+        function config_plot_options(cols, chosen_col){
+          console.log("chosen_col: ", chosen_col);
+          // console.log("type: ", type);
+          // if(type=='numerical'){
+          $('#viz-dropdowns').empty();
+          $('#viz-dropdowns').append('<p class="font-weight-bold">Choose one predicate to show:</p><select id="viz-options" onchange="config_and_draw()"></select>');
+          var dropdown = document.getElementById('viz-options');
+          // dropdown='';
+
+          for(var i=0;i<cols.length;i++){
+            var opt = document.createElement("option"); 
+            opt.text = cols[i];
+            opt.value = cols[i];
+            dropdown.appendChild(opt);
+          }
+
+          if(chosen_col!='null'){
+            $("#viz-options").val(chosen_col);
+          }
+        }
+            // }
+            // }else{// create the necessary elements
+              // checks = document.getElementById('viz-nominal-options')
+              // checks.innerHTML = '';
+              // for(var i=0;i<cols.length;i++){
+              //   var label= document.createElement("label");
+              //   var description = document.createTextNode(cols[i]);
+              //   var checkbox = document.createElement("input");
+
+              //   checkbox.type = "checkbox";    // make the element a checkbox
+              //   checkbox.name = "pattern_nominals";      // give it a name we can check on the server side
+              //   checkbox.value = cols[i];         // make its value "pair"
+              //   checkbox.checked = true;
+              //   checkbox.onclick = function() {
+              //     config_and_draw();
+              //   } 
+
+              //   // label.appendChild(checkbox);   // add the box to the element
+              //   label.appendChild(description);// add the description to the element
+
+              //   linebreak = document.createElement("br");
+
+              //   checks.appendChild(label);
+              //   checks.appendChild(checkbox);
+              //   checks.appendChild(linebreak);
+              // }
+          //   }
+          // }
+
+        function config_and_draw(){
+          var col_to_draw = $('#viz-options').val();
+          // var pattern_nominal_to_draw = [];
+          // $('#viz-nominal-options input:checked').each(function() {
+          //   pattern_nominal_to_draw.push($(this).attr('value'));
+          // });
+
+          $.ajax({
+            type: 'POST',
+            url: '{{url_for("draw")}}',
+            data: JSON.stringify({"col_to_draw": col_to_draw, "pattern_desc": selected_pattern_desc, "first_call": 'no'}),
+            dataType: 'JSON',
+            contentType: "application/json",
+            success: function(data){
+              plot_example(data.data, data.pattern_config, data.plot_type);
+            }
+          })
+          // console.log("pattern_numeric_to_draw: ", pattern_numeric_to_draw);
+          // console.log("pattern_nominal_to_draw: ", pattern_nominal_to_draw);
+        }
+
+        String.prototype.format = function () {
+          var i = 0, args = arguments;
+          return this.replace(/{}/g, function () {
+            return typeof args[i] != 'undefined' ? args[i++] : '';
+          });
+        };
+
+        function plot_example(plotdata, pattern_config=null, plot_type='numeric'){
+          console.log("pattern_config: ", pattern_config);
+          console.log("pattern_config.col_to_draw: ", pattern_config.col_to_draw);
+          console.log("pattern_config.pattern_value: ", pattern_config.pattern_value);
+
+          var testformat;
+          if(plot_type=='nominal'){
+            testformat = "datum['{}']=='{}'".format(pattern_config.col_to_draw, pattern_config.pattern_value);
+          }else{
+            testformat = "datum['{}'] {} '{}'".format(pattern_config.col_to_draw, pattern_config.pattern_condition,
+             pattern_config.pattern_value);
+          }
+          console.log(testformat);
+          console.log(plotdata);
+
+          if(plot_type=='numeric'){
+            var vlSpec = {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "title": {
+                "text": pattern_config.title,
+                "subtitle": pattern_config.subtitle,
+                "offset": 50,
+                "fontSize": 20,
+                "subtitleFontSize": 15,
+                "font": "Montserrat",
+                "subtitleFont": "monospace",
+                "subtitleColor": "black"
+                },
+              "data": {"name": "mydata", "values": plotdata},
+              "facet": {"row": {"field": "user_question"}},
+              "config": {
+                "axis": {"labelFont": "monospace", "titleFont": "monospace", "titleFontSize":15, "labelFontSize":15},
+                "header": {"labelFont": "monospace", "titleFont": "monospace", "labelFontSize":15, "titleFontSize":10},
+                "mark": {"font": "monospace"},
+                "title": {"font": "monospace", "subtitleFont": "monospace"}
+              },
+              "spec": {
+                "width": 500,
+                "height": 150,
+                "mark": "bar",
+                "encoding": {
+                  "x": {
+                    "bin": {"binned": true, "step": pattern_config.bin_size},
+                    "field": pattern_config.col_to_draw,
+                    "type": "quantitative",
+                    "axis": {"labelAngle": 45}
+                  },
+                  "y": {
+                    "aggregate": "count", 
+                    "type": "quantitative",
+                    "title": "count"
+                  },
+                  "color": {
+                    "condition": [{"test": testformat,
+                                   "value": "red"}]
+                  }
+                }
+                }
+              }
+          }else{
+            var vlSpec = {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "title": {
+                "text": pattern_config.title,
+                "subtitle": pattern_config.subtitle,
+                "offset": 50,
+                "fontSize": 20,
+                "subtitleFontSize": 15,
+                "font": "Montserrat",
+                "subtitleFont": "monospace",
+                "subtitleColor": "black"
+                },
+              "data": { "name": "mydata", "values": plotdata},
+              "facet": {"row": {"field": "user_question"}},
+              "config": {
+                "axis": {"labelFont": "monospace", "titleFont": "monospace", "titleFontSize":15, "labelFontSize":15},
+                "header": {"labelFont": "monospace", "titleFont": "monospace", "labelFontSize":15, "titleFontSize":10},
+                "mark": {"font": "monospace"},
+                "title": {"font": "monospace", "subtitleFont": "monospace"}
+              },
+              "spec": {
+                "width": 500,
+                "height": 150,
+                "mark": {"type": "bar", "width": {"band": 0.7}},
+                "encoding": {
+                  "x": {
+                    "field": pattern_config.col_to_draw , 
+                    "type": "nominal", 
+                    "axis": {"labelAngle": 30}
+                  },
+                  "y": {
+                    "field": "cnt", 
+                    "type": "quantitative",
+                    "title": "count"
+                  },
+                  "color": {"condition": 
+                  [{"test": testformat, 
+                    "value": "red"}]
+                  // [{"test": "datum['${pattern_config.col_to_draw}']=={'${pattern_config.pattern_value}'", 
+                  //   "value": "red"}]
+                  }
+                }
+              }
+            }
+          } 
+          vegaEmbed('#vis', vlSpec);
+        }
+
+          var svg = d3.select("#schemagraph")            
+            .append("svg")
+            .attr("width", 600) //400
+            .attr("height", 300); //300
+
+          svg.append("defs").append("marker")
+              //.attr("id", "arrow")
+              .attr("viewBox", "5 -5 10 10")
+              .attr("refX", 20)
+              .attr("refY", 0)
+              .attr("markerWidth", 8)
+              .attr("markerHeight", 8)
+              .attr("orient", "auto")
+            .append("svg:path")
+              .attr("d", "M0,-5L10,0L0,5");
+
+          var sg_width = svg.attr("width");
+          var sg_height = svg.attr("height");
+
+          var graph = {{schema_graph_data | safe}};
+
+          // var simulation = d3
+          //     .forceSimulation(graph.nodes)
+          //     .force("link",d3.forceLink(graph.links).id(function(d) {return d.id;}).distance(120).links(graph.links))
+          //     .force("charge", d3.forceManyBody().strength(-450)) //-200
+          //     .force("center", d3.forceCenter(sg_width / 2, sg_height / 2))
+          //     //@@@@@@@.force("collision", d3.forceCollide().radius(function(d){return d.radius*2})) //##
+          //     .force('collision', collisionForce)
+          //     .on("tick", ticked);
+
+            var link = svg.selectAll(".link")
+                .data(graph.links)
+                .enter()
+                .append("g")
+                .attr("class", "link")
+                .append("line")
+                .style("stroke", "grey")
+                .attr("class", "link-line")
+                //.attr("marker-end", "url(#arrow)")
+                .attr("stroke-width", function(d) {return 3;})
+                .on("mouseover", mouseover).on("mouseout", mouseout).on("mousemove", mousemove);
+
+            // var linkText = svg.selectAll(".link")
+            //     .append("text")
+            //     .attr("class", "link-label")
+            //     .attr("font-family", "Arial, Helvetica, sans-serif")
+            //     .attr("fill", "Black")
+            //     .style("font", "normal 12px Arial")
+            //     .attr("dy", ".35em")
+            //     .attr("text-anchor", "middle")
+            //     .text(function(d) {
+            //         return d.type;
+            //     });
+
+            var drag = d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+            var nodes_with_text = svg.append("g").selectAll("g").data(graph.nodes)
+                                      .enter().append("g").call(drag);
+            // var circles = nodes_with_text.append("circle").attr("r", 20).attr("fill", "red"); //15
+            var circles = nodes_with_text.append("rect").attr("width", function(d){ return d.name.length*10}).attr("height", 40)
+              .attr("x", function(d){return -5*d.name.length}).attr("y", -20).attr("fill", "#a2a4fb");
+            ///////@@@@@
+            var collisionForce = rectCollide().size(function (d) { return [d.name.length*10, 40] })
+            //var boxForce = boundedBox().bounds([[0, 0], [sg_width, sg_height]]).size(function (d) { return [d.name.length*10, 40] })
+            ///////@@@@@
+            var texts = nodes_with_text.append("text").text(function(d){ return d.name }).style("text-anchor", "middle");
+            var tooltip_schema = d3.select("#schemagraph").append("div").style("position", "absolute")
+                                    .style("visibility", "hidden").style("background-color", "#a7a7a7")
+                                    .style("color", "white").style("border-width", "1px")
+                                    .style("border-radius", "5px").style("padding", "10px");
+            var simulation = d3
+              .forceSimulation(graph.nodes)
+              .force("link",d3.forceLink(graph.links).id(function(d) {return d.id;}).distance(120).links(graph.links))
+              .force("charge", d3.forceManyBody().strength(-450)) //-200
+              .force("center", d3.forceCenter(sg_width / 2, sg_height / 2))
+              //@@@@@@@.force("collision", d3.forceCollide().radius(function(d){return d.radius*2})) //##
+              .force('collision', collisionForce)
+              .on("tick", ticked);
+            function rectCollide() {
+              var nodes, sizes, masses
+              var size = constant([0, 0])
+              var strength = 1
+              var iterations = 1
+
+              function force() {
+                  var node, size, mass, xi, yi
+                  var i = -1
+                  while (++i < iterations) { iterate() }
+
+                  function iterate() {
+                      var j = -1
+                      var tree = d3.quadtree(nodes, xCenter, yCenter).visitAfter(prepare)
+
+                      while (++j < nodes.length) {
+                          node = nodes[j]
+                          size = sizes[j]
+                          mass = masses[j]
+                          xi = xCenter(node)
+                          yi = yCenter(node)
+
+                          tree.visit(apply)
+                      }
+                  }
+
+                  function apply(quad, x0, y0, x1, y1) {
+                      var data = quad.data
+                      var xSize = (size[0] + quad.size[0]) / 2
+                      var ySize = (size[1] + quad.size[1]) / 2
+                      if (data) {
+                          if (data.index <= node.index) { return }
+
+                          var x = xi - xCenter(data)
+                          var y = yi - yCenter(data)
+                          var xd = Math.abs(x) - xSize
+                          var yd = Math.abs(y) - ySize
+
+                          if (xd < 0 && yd < 0) {
+                              var l = Math.sqrt(x * x + y * y)
+                              var m = masses[data.index] / (mass + masses[data.index])
+
+                              if (Math.abs(xd) < Math.abs(yd)) {
+                                  node.vx -= (x *= xd / l * strength) * m
+                                  data.vx += x * (1 - m)
+                              } else {
+                                  node.vy -= (y *= yd / l * strength) * m
+                                  data.vy += y * (1 - m)
+                              }
+                          }
+                      }
+
+                      return x0 > xi + xSize || y0 > yi + ySize ||
+                              x1 < xi - xSize || y1 < yi - ySize
+                  }
+
+                  function prepare(quad) {
+                      if (quad.data) {
+                          quad.size = sizes[quad.data.index]
+                      } else {
+                          quad.size = [0, 0]
+                          var i = -1
+                          while (++i < 4) {
+                              if (quad[i] && quad[i].size) {
+                                  quad.size[0] = Math.max(quad.size[0], quad[i].size[0])
+                                  quad.size[1] = Math.max(quad.size[1], quad[i].size[1])
+                              }
+                          }
+                      }
+                  }
+              }
+
+              function xCenter(d) { return d.x + d.vx + sizes[d.index][0] / 2 }
+              function yCenter(d) { return d.y + d.vy + sizes[d.index][1] / 2 }
+
+              force.initialize = function (_) {
+                  sizes = (nodes = _).map(size)
+                  masses = sizes.map(function (d) { return d[0] * d[1] })
+              }
+
+              force.size = function (_) {
+                  return (arguments.length
+                        ? (size = typeof _ === 'function' ? _ : constant(_), force)
+                        : size)
+              }
+
+              force.strength = function (_) {
+                  return (arguments.length ? (strength = +_, force) : strength)
+              }
+
+              force.iterations = function (_) {
+                  return (arguments.length ? (iterations = +_, force) : iterations)
+              }
+
+              return force
+            }            
+            function constant(_) { return function () { return _ } }
+            function ticked() {
+              nodes_with_text.attr("transform", function(d) { return "translate("+Math.max(20, Math.min(sg_width-20, d.x))+","+Math.max(20, Math.min(sg_height-20, d.y))+")";});
+              //nodes_with_text.attr("transform", function(d){ return "translate(" + d.x + ", " + d.y + ")";});
+
+              link.attr("x1", function(d) { return d.source.x; }).attr("y1", function(d) { return d.source.y; })
+                  .attr("x2", function(d) { return d.target.x; }).attr("y2", function(d) { return d.target.y; });
+              // linkText
+              //     .attr("x", function(d) {
+              //         return ((d.source.x + d.target.x)/2);
+              //     })
+              //     .attr("y", function(d) {
+              //         return ((d.source.y + d.target.y)/2);
+              //     });
+            };
+            function dragstarted(d) {if(!d3.event.active) simulation.alphaTarget(0.3).restart();d.fx = d3.event.x;d.fy = d3.event.y;}
+            //function dragstarted(d) { if (!d3.event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; };
+            function dragged(d) { d.fx = d3.event.x; d.fy = d3.event.y; };
+            function dragended(d) { if (!d3.event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; };
+            function mouseover(d) { tooltip_schema.style("visibility", "visible").text(d.type); }
+            function mouseout() { tooltip_schema.style("visibility", "hidden"); }
+            function mousemove(){ tooltip_schema.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px"); }
+
+            qmarkHtml = "<i class=\"fa fa-question-circle\" style=\"font-size:24px;\"></i><span class=\"tooltiptext\">schema graph</span>";
+            $("#tooltip_schema").append(qmarkHtml);
+
+      </script>
+      <!--</div> -->
+    </div>
+</div>    
+</body>
+</html>
