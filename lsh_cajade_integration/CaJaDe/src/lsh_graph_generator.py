@@ -76,12 +76,15 @@ class LSH_Graph_Generator:
             self.cur.execute(cols_q)
             cols = self.cur.fetchall()
             for c in cols:
+                if c[0] in ['thresh', 'tname', 'cname', 'dsize', 'hashval']:
+                    # Skipping LSH Index Config columns
+                    continue
                 distincts_q = f'select distinct "{c[0]}" FROM {t[0]} where "{c[0]}" is not null'
                 self.cur.execute(distincts_q)
                 set_vals = [v[0] for v in self.cur.fetchall()]
                 mh = MinHash(num_perm=num_perm)
                 for v in set_vals:
-                    mh.update(v.encode('utf8'))
+                    mh.update(repr(v).encode('utf8'))
                 lmh = LeanMinHash(seed=mh.seed,hashvalues=mh.hashvalues)
                 pickled_lmh = pickle.dumps(lmh)
                 insert_one_hash_q = f"""INSERT INTO hashes.{table_name}

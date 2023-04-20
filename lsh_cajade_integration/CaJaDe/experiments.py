@@ -205,6 +205,18 @@ def InsertStats(conn, stats_trackers, stats_relation_name, schema, exp_time, exp
         )
 
 
+def extract_tbl_name(sql_query):
+    sql_query = sql_query[0]
+    replace_list = ['\n', '(', ')', '*', '=']
+    for i in replace_list:
+        sql_query = sql_query.replace(i, ' ')
+    sql_query = sql_query.split()
+    res = []
+    for i in range(1, len(sql_query)):
+        if sql_query[i-1] in ['from', 'join'] and sql_query[i] != 'select':
+            res.append(sql_query[i])
+    return res
+
 def run_experiment(conn=None,
                    result_schema='demotest',
                    user_query = ("provenance of (select count(*) as win, s.season_name from team t, game g, season s where t.team_id = g.winner_id and g.season_id = s.season_id and t.team= 'GSW' group by s.season_name);",'test'),
@@ -287,7 +299,8 @@ def run_experiment(conn=None,
     # G = MultiGraph()
     # sg, attr_dict = scj.generate_graph(G)
     scj = LSH_Graph_Generator(conn)
-    query_from_table = "libraries_visitors_by_location"
+    query_from_table = extract_tbl_name(user_query)[0]
+    logger.debug(query_from_table)
     sg, attr_dict = scj.generate_graph(query_from_table)
     # print("final dictinary:", attr_dict)
     pg = provenance_getter(conn = conn, gprom_wrapper = w, db_dict=attr_dict)
