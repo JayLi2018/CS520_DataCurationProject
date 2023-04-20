@@ -50,7 +50,7 @@ class LSH_Graph_Generator:
                         if(int(megabytes.search(r[1]).group(1))>100):
                             continue
                     res.append(r)
-            print("number of tables we consider: %s", str(len(res)))
+            print("number of tables we consider:", str(len(res)))
         else:
             get_t_q = f"""
             SELECT table_name
@@ -128,8 +128,15 @@ class LSH_Graph_Generator:
         
         mhash = index_dict[f'{tname}->{cname}']['mhash']
         dsize = index_dict[f'{tname}->{cname}']['dsize']
+
+        results = [k for k in lshensemble.query(mhash, dsize)]
+        res = []
+        for each_col in results:
+            o_hash = index_dict[each_col]['mhash']
+            sim = mhash.jaccard(o_hash)
+            res.append((sim, each_col))
         
-        return [k for k in lshensemble.query(mhash, dsize)]
+        return res
 
 
     def build_schema(self, lshensemble, index_dict):
@@ -143,18 +150,17 @@ class LSH_Graph_Generator:
             except ZeroDivisionError:
                 continue
             if(candidates):
-                for c in candidates:
+                for sim, c in candidates:
                     ctable, ccol = c.split('->')
                     sgraph.add_edge(v['table'], ctable)
-                    edge_labels[(v['table'], ctable)] = \
-                    (f"{v['col']}---{ccol}", 'red')
+                    edge_labels[(v['table'], ctable)] = (f"{v['col']}---{ccol}", 'red', sim)
         
         return sgraph, edge_labels
     
     def generate_graph(self, table_name):
         print("Starting LSH on given DB and tables")
 
-        self.create_and_serialize_index(table_name, smaller=False)
+        self.create_and_serialize_index(table_name, smaller=True)
 
         lshensemble, index_dict = self.load_index(table_name)
 
